@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Casper Gantt Pro｜甘特圖專案管理系統</title>
+<style>
+:root{
+  --bg:#f4f6fb;--card:#fff;--text:#172033;--muted:#697386;--line:#e5e8ef;
+  --primary:#ff6a00;--primary2:#ff9f40;--blue:#2563eb;--green:#16a34a;
+  --red:#dc2626;--yellow:#f59e0b;--gray:#9ca3af;--purple:#7c3aed;
+  --shadow:0 12px 30px rgba(15,23,42,.08);--dayw:38px;--rowh:58px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Microsoft JhengHei","Noto Sans TC",Arial,sans-serif}
+.app{max-width:1600px;margin:auto;padding:24px}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+h1{margin:0;font-size:30px}
+.sub{color:var(--muted);font-size:14px;margin-top:6px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+button{border:0;border-radius:10px;padding:10px 13px;font-weight:800;cursor:pointer;font-family:inherit}
+.primary{background:linear-gradient(90deg,var(--primary),var(--primary2));color:white}
+.secondary{background:white;border:1px solid var(--line);color:var(--text)}
+.danger{background:#fee2e2;color:var(--red)}
+button:hover{filter:brightness(.98);transform:translateY(-1px)}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;padding:16px}
+.card .label{font-size:12px;color:var(--muted);margin-bottom:7px}
+.card .num{font-size:25px;font-weight:900}
+.board{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;overflow:hidden}
+.controls{display:grid;grid-template-columns:1.5fr 130px 130px 110px 115px 95px 95px 1.2fr auto;gap:9px;padding:14px;background:#fafbfc;border-bottom:1px solid var(--line)}
+input,select{border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;background:white;min-width:0}
+.filters{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;background:white}
+.filters input,.filters select{max-width:220px}
+.ganttWrap{overflow:auto;max-height:68vh;position:relative}
+.gantt{display:grid;grid-template-columns:330px repeat(31,var(--dayw));min-width:1508px}
+.cell{height:40px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;background:white}
+.header{position:sticky;top:0;z-index:5;background:#f1f4f9;font-weight:900}
+.left{position:sticky;left:0;z-index:4;justify-content:flex-start;padding:0 12px;border-right:1px solid #cbd5e1;background:white}
+.header.left{z-index:8;background:#f1f4f9}
+.month{grid-column:2/-1;background:#101827;color:white;justify-content:flex-start;padding-left:16px;font-weight:900}
+.weekend{background:#fff7ed}
+.today{background:#eff6ff!important;color:#1d4ed8;font-weight:900}
+.taskInfo{height:var(--rowh);display:flex;align-items:center;gap:10px}
+.caret{width:22px;height:22px;border-radius:6px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:900}
+.taskTitle{font-weight:900;font-size:14px}
+.taskMeta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.child{padding-left:30px}
+.timeline{grid-column:2/-1;height:var(--rowh);position:relative;border-bottom:1px solid var(--line);
+background:repeating-linear-gradient(to right,transparent,transparent calc(var(--dayw) - 1px),var(--line) var(--dayw))}
+.baseline{position:absolute;top:41px;height:5px;border-radius:999px;background:#334155;opacity:.45}
+.bar{position:absolute;top:14px;height:28px;border-radius:999px;color:white;font-size:12px;font-weight:900;padding:0 9px;display:flex;align-items:center;white-space:nowrap;overflow:hidden;box-shadow:0 8px 15px rgba(0,0,0,.16);cursor:grab}
+.bar:active{cursor:grabbing}
+.bar::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p);background:rgba(255,255,255,.28)}
+.bar span{position:relative;z-index:1}
+進行中{}
+.s-doing{background:linear-gradient(90deg,#ff6a00,#ff9f40)}
+.s-todo{background:linear-gradient(90deg,#94a3b8,#cbd5e1)}
+.s-done{background:linear-gradient(90deg,#16a34a,#4ade80)}
+.s-delay{background:linear-gradient(90deg,#dc2626,#fb7185)}
+.s-risk{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.milestone{width:25px!important;height:25px;transform:rotate(45deg);border-radius:6px;top:15px;background:var(--purple);padding:0}
+.milestone span{transform:rotate(-45deg);font-size:0}
+.critical{outline:3px solid rgba(220,38,38,.25)}
+.dep{position:absolute;height:2px;background:#475569;top:28px}
+.dep:after{content:"";position:absolute;right:-2px;top:-4px;border-left:7px solid #475569;border-top:5px solid transparent;border-bottom:5px solid transparent}
+.badge{padding:3px 8px;border-radius:999px;font-size:12px;font-weight:900}
+.high{background:#fee2e2;color:#991b1b}.mid{background:#fef3c7;color:#92400e}.low{background:#dcfce7;color:#166534}
+.table{width:100%;border-collapse:collapse;background:white;margin-top:14px;border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.table th,.table td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
+.table th{background:#f1f4f9}
+.progress{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;min-width:80px}.progress div{height:100%;background:var(--primary)}
+.sideHint{font-size:12px;color:var(--muted);margin-left:auto}
+@media(max-width:900px){.app{padding:12px}.top{flex-direction:column}.cards{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr 1fr}.btns{justify-content:flex-start}}
+@media print{.controls,.filters,.btns,.table button{display:none}.app{padding:0}.board,.card,.table{box-shadow:none}.ganttWrap{max-height:none;overflow:visible}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <h1>Casper Gantt Pro</h1>
+      <div class="sub">專業甘特圖專案管理系統｜任務階層、依賴、里程碑、基準線、進度、篩選、匯出、LocalStorage 自動儲存</div>
+    </div>
+    <div class="btns">
+      <button class="secondary" onclick="loadDemo()">範例資料</button>
+      <button class="secondary" onclick="exportJSON()">匯出 JSON</button>
+      <button class="secondary" onclick="importJSON()">匯入 JSON</button>
+      <button class="secondary" onclick="exportCSV()">匯出 CSV</button>
+      <button class="primary" onclick="window.print()">列印 / 存 PDF</button>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">總任務</div><div class="num" id="cTotal">0</div></div>
+    <div class="card"><div class="label">進行中</div><div class="num" id="cDoing">0</div></div>
+    <div class="card"><div class="label">平均進度</div><div class="num" id="cAvg">0%</div></div>
+    <div class="card"><div class="label">高優先級</div><div class="num" id="cHigh">0</div></div>
+    <div class="card"><div class="label">延遲 / 風險</div><div class="num" id="cRisk">0</div></div>
+  </div>
+
+  <div class="board">
+    <div class="controls">
+      <input id="name" placeholder="任務名稱，例如 8/8 Brand SBD">
+      <input id="start" type="date" value="2026-07-03">
+      <input id="end" type="date" value="2026-07-14">
+      <input id="owner" value="Casper" placeholder="負責人">
+      <select id="status"><option>未開始</option><option selected>進行中</option><option>已完成</option><option>延遲</option><option>風險</option></select>
+      <input id="progress" type="number" min="0" max="100" value="30" placeholder="進度">
+      <select id="priority"><option>高</option><option>中</option><option>低</option></select>
+      <input id="note" placeholder="備註 / 依賴，例如 1,2">
+      <button class="primary" onclick="addTask()">新增</button>
+    </div>
+
+    <div class="filters">
+      <input id="q" placeholder="搜尋任務 / 負責人 / 備註" oninput="render()">
+      <select id="fStatus" onchange="render()"><option value="">全部狀態</option><option>未開始</option><option>進行中</option><option>已完成</option><option>延遲</option><option>風險</option></select>
+      <select id="fOwner" onchange="render()"><option value="">全部負責人</option></select>
+      <label><input type="checkbox" id="showBase" checked onchange="render()"> 顯示基準線</label>
+      <label><input type="checkbox" id="showCritical" checked onchange="render()"> 標示關鍵/高優先</label>
+      <span class="sideHint">提示：點「編輯」可改日期、進度、父層與里程碑。資料會自動存在本機瀏覽器。</span>
+    </div>
+
+    <div class="ganttWrap">
+      <div id="gantt" class="gantt"></div>
+    </div>
+  </div>
+
+  <table class="table" id="table"></table>
+</div>
+
+<input type="file" id="file" accept="application/json" style="display:none">
+
+<script>
+const KEY="casper_gantt_pro_system_v3";
+const MS=86400000;
+let collapsed={};
+let tasks=JSON.parse(localStorage.getItem(KEY)||"null")||[
+ {id:1,name:"7/14 TCL SBD",start:"2026-07-03",end:"2026-07-14",owner:"Casper",status:"進行中",progress:30,priority:"高",note:"備註",parent:null,dep:"",milestone:false,baseStart:"2026-07-03",baseEnd:"2026-07-14"},
+ {id:2,name:"素材盤點 / 商品圖確認",start:"2026-07-03",end:"2026-07-05",owner:"Casper",status:"進行中",progress:60,priority:"高",note:"TCL 前置作業",parent:1,dep:"",milestone:false,baseStart:"2026-07-03",baseEnd:"2026-07-05"},
+ {id:3,name:"頁面與 Banner 排程",start:"2026-07-06",end:"2026-07-10",owner:"Casper",status:"未開始",progress:0,priority:"中",note:"依賴任務2",parent:1,dep:"2",milestone:false,baseStart:"2026-07-06",baseEnd:"2026-07-10"},
+ {id:4,name:"TCL SBD 上線",start:"2026-07-14",end:"2026-07-14",owner:"Casper",status:"未開始",progress:0,priority:"高",note:"里程碑",parent:1,dep:"3",milestone:true,baseStart:"2026-07-14",baseEnd:"2026-07-14"},
+ {id:5,name:"7/27 Dyson SBD",start:"2026-07-03",end:"2026-07-27",owner:"Casper",status:"進行中",progress:15,priority:"高",note:"大型檔期",parent:null,dep:"",milestone:false,baseStart:"2026-07-03",baseEnd:"2026-07-27"},
+ {id:6,name:"Dyson 提案與資源確認",start:"2026-07-03",end:"2026-07-09",owner:"Casper",status:"進行中",progress:35,priority:"高",note:"預算、券、曝光",parent:5,dep:"",milestone:false,baseStart:"2026-07-03",baseEnd:"2026-07-09"},
+ {id:7,name:"Dyson SBD 上線",start:"2026-07-27",end:"2026-07-27",owner:"Casper",status:"未開始",progress:0,priority:"高",note:"里程碑",parent:5,dep:"6",milestone:true,baseStart:"2026-07-27",baseEnd:"2026-07-27"}
+];
+
+function d(s){return new Date(s+"T00:00:00")}
+function fmt(s){let x=d(s);return `${x.getMonth()+1}/${x.getDate()}`}
+function dayIndex(s){return Math.round((d(s)-new Date("2026-07-01T00:00:00"))/MS)+1}
+function daysBetween(a,b){return Math.round((d(b)-d(a))/MS)+1}
+function save(){localStorage.setItem(KEY,JSON.stringify(tasks))}
+function statusClass(s){return s==="已完成"?"s-done":s==="未開始"?"s-todo":s==="延遲"?"s-delay":s==="風險"?"s-risk":"s-doing"}
+function priorityClass(p){return p==="高"?"high":p==="中"?"mid":"low"}
+
+function visibleTasks(){
+ let q=document.getElementById("q")?.value?.toLowerCase()||"";
+ let fs=document.getElementById("fStatus")?.value||"";
+ let fo=document.getElementById("fOwner")?.value||"";
+ let filtered=tasks.filter(t=>(!fs||t.status===fs)&&(!fo||t.owner===fo)&&(!q||`${t.name} ${t.owner} ${t.note}`.toLowerCase().includes(q)));
+ let out=[];
+ function addLevel(parent,level){
+   filtered.filter(t=>t.parent===parent).forEach(t=>{
+     out.push({...t,level});
+     if(!collapsed[t.id]) addLevel(t.id,level+1);
+   });
+ }
+ addLevel(null,0);
+ filtered.filter(t=>t.parent&&!tasks.find(x=>x.id===t.parent)).forEach(t=>out.push({...t,level:0}));
+ return out;
+}
+
+function render(){
+ save();renderOwners();renderCards();renderGantt();renderTable();
+}
+function renderOwners(){
+ let sel=document.getElementById("fOwner"), cur=sel.value;
+ let owners=[...new Set(tasks.map(t=>t.owner).filter(Boolean))];
+ sel.innerHTML='<option value="">全部負責人</option>'+owners.map(o=>`<option>${o}</option>`).join("");
+ sel.value=owners.includes(cur)?cur:"";
+}
+function renderCards(){
+ let avg=tasks.length?Math.round(tasks.reduce((s,t)=>s+Number(t.progress||0),0)/tasks.length):0;
+ cTotal.textContent=tasks.length;cDoing.textContent=tasks.filter(t=>t.status==="進行中").length;cAvg.textContent=avg+"%";
+ cHigh.textContent=tasks.filter(t=>t.priority==="高").length;cRisk.textContent=tasks.filter(t=>["延遲","風險"].includes(t.status)).length;
+}
+function renderGantt(){
+ const g=document.getElementById("gantt"), vt=visibleTasks();g.innerHTML="";
+ let m=document.createElement("div");m.className="cell header left";m.textContent="任務";g.appendChild(m);
+ for(let i=1;i<=31;i++){let dt=new Date(2026,6,i),c=document.createElement("div");c.className="cell header "+([0,6].includes(dt.getDay())?"weekend ":"")+(i===3?"today":"");c.textContent=i;g.appendChild(c)}
+ vt.forEach(t=>{
+   let left=document.createElement("div");left.className="left taskInfo "+(t.level?"child":"");
+   let hasChild=tasks.some(x=>x.parent===t.id);
+   left.innerHTML=`${hasChild?`<div class="caret" onclick="collapsed[${t.id}]=!collapsed[${t.id}];render()">${collapsed[t.id]?"＋":"－"}</div>`:`<div style="width:${22+t.level*16}px"></div>`}
+   <div><div class="taskTitle">${t.milestone?"◆ ":""}${t.name}</div><div class="taskMeta"><span>${t.owner}</span><span>${t.status}</span><span>${fmt(t.start)}-${fmt(t.end)}</span><span>${t.progress}%</span></div></div>`;
+   g.appendChild(left);
+   let line=document.createElement("div");line.className="timeline";
+   if(showBase.checked && t.baseStart && t.baseEnd){
+     let bs=Math.max(1,dayIndex(t.baseStart)), be=Math.min(31,dayIndex(t.baseEnd));
+     let b=document.createElement("div");b.className="baseline";b.style.left=((bs-1)*38)+"px";b.style.width=Math.max(14,(be-bs+1)*38-4)+"px";line.appendChild(b);
+   }
+   let st=Math.max(1,dayIndex(t.start)), en=Math.min(31,dayIndex(t.end));
+   let bar=document.createElement("div");bar.className="bar "+statusClass(t.status)+(t.milestone?" milestone":"")+(showCritical.checked&&t.priority==="高"?" critical":"");
+   bar.style.left=((st-1)*38)+"px";bar.style.width=t.milestone?"25px":Math.max(30,(en-st+1)*38-4)+"px";bar.style.setProperty("--p",(t.progress||0)+"%");
+   bar.title=`${t.name}\n${fmt(t.start)}-${fmt(t.end)}\n${t.progress}%`;
+   bar.innerHTML=`<span>${t.milestone?"":t.name+" "+t.progress+"%"}</span>`;
+   line.appendChild(bar);
+   if(t.dep){
+     String(t.dep).split(",").map(x=>Number(x.trim())).filter(Boolean).forEach(id=>{
+       let dep=tasks.find(x=>x.id===id); if(!dep) return;
+       let depEnd=Math.min(31,dayIndex(dep.end)), curStart=Math.max(1,dayIndex(t.start));
+       if(curStart>depEnd){
+         let l=document.createElement("div");l.className="dep";l.style.left=(depEnd*38-6)+"px";l.style.width=((curStart-depEnd)*38-16)+"px";line.appendChild(l);
+       }
+     });
+   }
+   g.appendChild(line);
+ });
+}
+function renderTable(){
+ let vt=visibleTasks();
+ table.innerHTML=`<tr><th>ID</th><th>任務</th><th>期間</th><th>負責人</th><th>狀態</th><th>進度</th><th>優先</th><th>依賴</th><th>備註</th><th>操作</th></tr>`+
+ vt.map(t=>`<tr>
+ <td>${t.id}</td><td><b>${"　".repeat(t.level)}${t.milestone?"◆ ":""}${t.name}</b></td><td>${fmt(t.start)} ~ ${fmt(t.end)}<br><small>${daysBetween(t.start,t.end)}天</small></td>
+ <td>${t.owner}</td><td>${t.status}</td><td><div class="progress"><div style="width:${t.progress}%"></div></div>${t.progress}%</td>
+ <td><span class="badge ${priorityClass(t.priority)}">${t.priority}</span></td><td>${t.dep||"-"}</td><td>${t.note||"-"}</td>
+ <td><button class="secondary" onclick="editTask(${t.id})">編輯</button> <button class="danger" onclick="delTask(${t.id})">刪除</button></td></tr>`).join("");
+}
+function nextId(){return Math.max(0,...tasks.map(t=>t.id))+1}
+function addTask(){
+ let task={id:nextId(),name:name.value.trim()||"未命名任務",start:start.value,end:end.value,owner:owner.value.trim()||"Casper",status:status.value,progress:Math.max(0,Math.min(100,Number(progress.value||0))),priority:priority.value,note:note.value.trim()||"-",parent:null,dep:"",milestone:false,baseStart:start.value,baseEnd:end.value};
+ if(d(task.end)<d(task.start)){alert("結束日期不可早於開始日期");return}
+ tasks.push(task);name.value="";note.value="";render();
+}
+function editTask(id){
+ let t=tasks.find(x=>x.id===id); if(!t)return;
+ let v=(msg,def)=>prompt(msg,def);
+ let name2=v("任務名稱",t.name); if(name2===null)return;
+ let start2=v("開始日期 YYYY-MM-DD",t.start); if(start2===null)return;
+ let end2=v("結束日期 YYYY-MM-DD",t.end); if(end2===null)return;
+ let owner2=v("負責人",t.owner); if(owner2===null)return;
+ let status2=v("狀態：未開始 / 進行中 / 已完成 / 延遲 / 風險",t.status); if(status2===null)return;
+ let progress2=v("進度 0-100",t.progress); if(progress2===null)return;
+ let priority2=v("優先級：高 / 中 / 低",t.priority); if(priority2===null)return;
+ let dep2=v("依賴任務ID，可用逗號，例如 2,3",t.dep||""); if(dep2===null)return;
+ let parent2=v("父層任務ID，空白代表主任務",t.parent||""); if(parent2===null)return;
+ let mile2=v("是否為里程碑？ true / false",t.milestone?"true":"false"); if(mile2===null)return;
+ let note2=v("備註",t.note||""); if(note2===null)return;
+ Object.assign(t,{name:name2,start:start2,end:end2,owner:owner2,status:status2,progress:Math.max(0,Math.min(100,Number(progress2||0))),priority:priority2,dep:dep2,parent:parent2?Number(parent2):null,milestone:mile2==="true",note:note2});
+ render();
+}
+function delTask(id){if(!confirm("確定刪除？子任務會保留但變成主任務。"))return;tasks=tasks.map(t=>t.parent===id?{...t,parent:null}:t).filter(t=>t.id!==id);render()}
+function exportCSV(){
+ let rows=[["ID","任務","開始","結束","負責人","狀態","進度","優先級","父層","依賴","里程碑","備註"]];
+ tasks.forEach(t=>rows.push([t.id,t.name,t.start,t.end,t.owner,t.status,t.progress,t.priority,t.parent||"",t.dep||"",t.milestone,t.note||""]));
+ let csv="\ufeff"+rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+ download(new Blob([csv],{type:"text/csv;charset=utf-8"}),"Casper_Gantt_Pro.csv");
+}
+function exportJSON(){download(new Blob([JSON.stringify(tasks,null,2)],{type:"application/json"}),"Casper_Gantt_Pro.json")}
+function importJSON(){file.click()}
+file.onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{tasks=JSON.parse(r.result);render()}catch(e){alert("JSON格式錯誤")}};r.readAsText(f)}
+function download(blob,filename){let u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=filename;a.click();URL.revokeObjectURL(u)}
+function loadDemo(){if(confirm("載入範例資料會覆蓋目前本機資料，確定？")){localStorage.removeItem(KEY);location.reload()}}
+render();
+</script>
+</body>
+</html>
